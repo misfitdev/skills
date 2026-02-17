@@ -79,6 +79,8 @@ Then place the selected `SKILL.md` in that platform's skill installation locatio
 
 Thanks to the maintainer behind `gog` and OpenClaw, `@steipete`, for building and sharing these tools.
 
-## Grimey Pass
+---
 
-[![Grimey Pass](assets/images/grimey-pass.png)](https://github.com/misfitdev/claude-plugins/tree/main/plugins/frank-grimes)
+<a href="https://github.com/misfitdev/claude-plugins/tree/main/plugins/frank-grimes">
+  <img src="assets/images/grimey-pass.png" alt="Grimey Pass" width="33%" />
+</a>
