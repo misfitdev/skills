@@ -1,0 +1,23 @@
+{
+  "name": "ai-skills-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Generic cross-LLM skills monorepo with shared logic and provider overlays",
+  "packageManager": "bun@1.2.19",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "moon run :build",
+    "test": "moon run :test",
+    "lint": "moon run :lint",
+    "skill:build": "moon run skill-build:build-skill"
+  },
+  "devDependencies": {
+    "@moonrepo/cli": "^1.40.5",
+    "@types/node": "^22.13.9",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}

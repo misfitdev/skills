@@ -1,0 +1,137 @@
+---
+name: calendar-hold-sync
+description: Sync one or more source Google calendars into private Busy hold events in one or more target calendars using gog. Use when users need idempotent double-booking prevention, backfill of legacy holds, drift reconcile, or safe scheduled sync.
+---
+
+# Calendar Hold Sync
+
+Implement hold mirroring from source Google calendars into target calendars to prevent double-booking.
+
+## Stack Contract
+
+- Use `moon` for monorepo task orchestration.
+- Use `bun` for dependency management and script execution.
+- Use TanStack primitives (`@tanstack/store`) for shared stateful logic.
+
+## Dependency
+
+- Require `gog` CLI in `PATH`.
+- Require user OAuth already configured for each account used in `mappings`.
+- Do not hardcode account emails, calendar IDs, or event IDs in code.
+
+If `gog` is not configured, use this setup flow:
+
+1. Run `gog auth credentials /path/to/client_secret.json`.
+2. Run `gog auth add you@gmail.com --services gmail,calendar,drive,contacts,sheets,docs`.
+3. Verify with `gog auth list`.
+
+Official `gog` references:
+
+- Homepage: https://gogcli.sh/
+- Source: https://github.com/steipete/gogcli
+
+## Config Contract
+
+Use a user-provided JSON config file with this shape:
+
+- `mappings[]`
+- `mappings[].name`
+- `mappings[].targetAccount`
+- `mappings[].targetCalendarId` (default `primary`)
+- `mappings[].sources[]` with `{ account, calendarId }`
+- `mappings[].lookaheadDays` (default `30`)
+- `mappings[].allDayMode`: `ignore|mirror`
+- `mappings[].overlapPolicy`: `skip|allow`
+- `hold.summary` (default `Busy`)
+- `hold.visibility` (`private`)
+- `hold.transparency` (`busy`)
+- `hold.notifications` (`none`)
+- `hold.reminders` (`none`)
+- `metadata.format` (`SYNCV1`)
+- `metadata.encoding` (`base64url(json)`)
+- `metadata.fields`: `srcAccount,srcCalendar,eventId,start,end,title`
+- `scheduling.reconcileCron`
+- `scheduling.daytimeCron` (optional)
+- `scheduling.driftWindowDays` (optional)
+- `scheduling.watchIntervalSeconds` (optional, default `20`)
+- `safety.dryRun`
+- `safety.maxChangesPerRun`
+- `safety.excludeIfSummaryMatches[]`
+- `safety.excludeIfDescriptionPrefix[]`
+- `gog.listEventsCmd|createEventCmd|updateEventCmd|deleteEventCmd` (optional template overrides)
+- `gog.allowCustomCommands` (must be `true` to enable any `gog.*Cmd` override)
+
+## Metadata Encoding
+
+Store source linkage in hold `description` as:
+
+- `SYNCV1:<base64url(JSON)>`
+
+JSON fields:
+
+- `srcAccount`
+- `srcCalendar`
+- `eventId`
+- `start`
+- `end`
+- `title`
+
+## Behavior
+
+For each mapping:
+
+1. Read source events in the active window.
+2. Build desired hold events (`private`, `busy`, no reminders).
+3. Detect existing managed holds by `SYNCV1:` prefix.
+4. Reconcile idempotently:
+- Create missing holds.
+- Update drifted holds.
+- Delete stale holds.
+5. If overlap policy is `skip`, do not create a hold when a non-managed target event overlaps.
+6. Enforce `maxChangesPerRun`.
+7. Respect `dryRun`.
+
+## Backfill
+
+Backfill mode upgrades legacy hold events (matching expected hold signature but lacking `SYNCV1`) by attaching encoded metadata when a unique source match exists.
+
+## Command Surface
+
+- `hold-sync validate-config`
+- `hold-sync reconcile --mapping <name>|--all [--dry-run]`
+- `hold-sync backfill --mapping <name>|--all [--dry-run]`
+- `hold-sync status --mapping <name>|--all`
+- `hold-sync install-cron --mapping <name>|--all`
+- `hold-sync watch --mapping <name>|--all [--dry-run] [--interval-seconds <n>]`
+
+## Watch Cadence
+
+Require watch cadence to be configurable from user config:
+
+- `scheduling.watchIntervalSeconds` controls watch poll frequency.
+- `mappings[].lookaheadDays` controls rolling watch/reconcile window.
+
+Recommend baseline values:
+
+- `watchIntervalSeconds: 900` (15 minutes)
+- `lookaheadDays: 1` (24 hours)
+
+## Required Tests
+
+- metadata encode/decode round-trip
+- overlap detection correctness
+- idempotent reconcile upsert/delete behavior
+
+Attribution: `gog` setup flow adapted from:
+- https://clawhub.ai/steipete/gog
+- https://github.com/steipete/gogcli
+- https://gogcli.sh/
+
+## Provider Notes (openclaw)
+
+Use this variant when publishing to ClawHub/OpenClaw.
+
+- Keep instructions implementation-focused and command-oriented.
+- Keep dependency explicit: `gog` must be preconfigured by user.
+- Prefer deterministic script execution over speculative edits.
+- Avoid provider-specific APIs; treat the CLI as the boundary.

@@ -1,0 +1,13 @@
+language: 'javascript'
+type: 'tool'
+toolchain:
+  default: 'bun'
+tasks:
+  build:
+    command: 'bun run build'
+  lint:
+    command: 'bun run lint'
+  test:
+    command: 'bun run test'
+  build-skill:
+    command: 'tsx src/index.ts ../../skills/calendar-hold-sync'

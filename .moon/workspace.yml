@@ -1,0 +1,8 @@
+projects:
+  hold-sync-core: 'packages/hold-sync-core'
+  hold-sync-cli: 'packages/hold-sync-cli'
+  skill-build: 'packages/skill-build'
+vcs:
+  manager: 'git'
+  defaultBranch: 'main'
+  remoteCandidates: []
