@@ -2,8 +2,6 @@
 
 Generic calendar hold sync skill for preventing double-booking by mirroring source Google Calendar events into private Busy holds in target calendars.
 
-Current skill version: `1.0.1` (see `skills/calendar-hold-sync/VERSION`).
-
 ## Supports
 
 - OpenClaw
