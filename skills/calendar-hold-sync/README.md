@@ -2,6 +2,8 @@
 
 Generic calendar hold sync skill for preventing double-booking by mirroring source Google Calendar events into private Busy holds in target calendars.
 
+Current skill version: `1.0.1` (see `skills/calendar-hold-sync/VERSION`).
+
 ## Supports
 
 - OpenClaw
@@ -29,9 +31,11 @@ If `gog` is not already set up, use this baseline flow:
 2. Add OAuth client credentials:
    - `gog auth credentials /path/to/client_secret.json`
 3. Add your Google account with required services:
-   - `gog auth add you@gmail.com --services gmail,calendar,drive,contacts,sheets,docs`
+   - `gog auth add you@gmail.com --services calendar`
 4. Verify account setup:
    - `gog auth list`
+
+Add non-calendar services only if you explicitly need them.
 
 Optional quality-of-life:
 
@@ -54,6 +58,12 @@ No account emails or calendar IDs are hardcoded in code.
 Security default:
 
 - custom command templates (`gog.*Cmd`) are disabled unless `gog.allowCustomCommands=true`.
+
+Custom command behavior when enabled:
+
+- only `gog` commands are accepted
+- placeholders are expanded into argument values
+- commands are executed as argv tokens (no shell interpolation)
 
 ### Watch Cadence (Configurable)
 

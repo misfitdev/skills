@@ -7,12 +7,6 @@ description: Sync one or more source Google calendars into private Busy hold eve
 
 Implement hold mirroring from source Google calendars into target calendars to prevent double-booking.
 
-## Stack Contract
-
-- Use `moon` for monorepo task orchestration.
-- Use `bun` for dependency management and script execution.
-- Use TanStack primitives (`@tanstack/store`) for shared stateful logic.
-
 ## Dependency
 
 - Require `gog` CLI in `PATH`.
@@ -22,8 +16,10 @@ Implement hold mirroring from source Google calendars into target calendars to p
 If `gog` is not configured, use this setup flow:
 
 1. Run `gog auth credentials /path/to/client_secret.json`.
-2. Run `gog auth add you@gmail.com --services gmail,calendar,drive,contacts,sheets,docs`.
+2. Run `gog auth add you@gmail.com --services calendar`.
 3. Verify with `gog auth list`.
+
+Only add additional Google services if you explicitly need them for another workflow.
 
 Official `gog` references:
 
@@ -60,6 +56,15 @@ Use a user-provided JSON config file with this shape:
 - `safety.excludeIfDescriptionPrefix[]`
 - `gog.listEventsCmd|createEventCmd|updateEventCmd|deleteEventCmd` (optional template overrides)
 - `gog.allowCustomCommands` (must be `true` to enable any `gog.*Cmd` override)
+
+## Custom Command Template Safety
+
+When custom commands are enabled:
+
+- Only `gog` command templates are accepted.
+- Templates are rendered by replacing placeholders like `{account}` and `{calendarId}`.
+- Rendered commands are executed as argv tokens (no shell interpolation).
+- Keep `gog.allowCustomCommands=false` unless you fully trust and audit the config file.
 
 ## Metadata Encoding
 
@@ -115,6 +120,17 @@ Recommend baseline values:
 
 - `watchIntervalSeconds: 900` (15 minutes)
 - `lookaheadDays: 1` (24 hours)
+
+## Working Model
+
+- Use polling-based watch mode (`hold-sync watch`) for fast updates.
+- Expect update latency approximately equal to `watchIntervalSeconds`.
+- Treat this as self-hosted/operator-run automation.
+
+## Known Limits
+
+- Do not assume webhook/push subscriptions are present; current fast sync path is polling.
+- Keep periodic scheduled reconcile as fallback even when watch mode is enabled.
 
 ## Required Tests
 
