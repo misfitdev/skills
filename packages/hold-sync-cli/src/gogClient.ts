@@ -33,15 +33,37 @@ async function runJson(command: string): Promise<any> {
   }
 }
 
+function quoteArg(value: string): string {
+  return JSON.stringify(value);
+}
+
+function normalizeEventTimes(event: GogEvent): { from: string; to: string; allDayFlag: string } {
+  if (event.start.dateTime && event.end.dateTime) {
+    return {
+      from: event.start.dateTime,
+      to: event.end.dateTime,
+      allDayFlag: ""
+    };
+  }
+  if (event.start.date && event.end.date) {
+    return {
+      from: event.start.date,
+      to: event.end.date,
+      allDayFlag: "--all-day"
+    };
+  }
+  throw new Error(`Event ${event.id} is missing supported start/end fields`);
+}
+
 const DEFAULTS = {
   listEventsCmd:
-    "gog calendar events list --account {account} --calendar-id {calendarId} --time-min {timeMin} --time-max {timeMax} --json",
+    "gog calendar events {calendarId} --account {account} --from {timeMin} --to {timeMax} --json",
   createEventCmd:
-    "gog calendar events create --account {account} --calendar-id {calendarId} --event-json {eventJson} --json",
+    "gog calendar create {calendarId} --account {account} --summary {summary} --from {from} --to {to} --description {description} --visibility {visibility} --transparency {transparency} --send-updates none {allDayFlag} --json",
   updateEventCmd:
-    "gog calendar events update --account {account} --calendar-id {calendarId} --event-id {eventId} --event-json {eventJson} --json",
+    "gog calendar update {calendarId} {eventId} --account {account} --summary {summary} --from {from} --to {to} --description {description} --visibility {visibility} --transparency {transparency} {allDayFlag} --json",
   deleteEventCmd:
-    "gog calendar events delete --account {account} --calendar-id {calendarId} --event-id {eventId} --json"
+    "gog calendar delete {calendarId} {eventId} --account {account} --force --json"
 };
 
 export class GogClient {
@@ -69,26 +91,41 @@ export class GogClient {
   }): Promise<GogEvent[]> {
     const command = applyTemplate(this.template("listEventsCmd"), args);
     const out = await runJson(command);
+    if (Array.isArray(out)) {
+      return out as GogEvent[];
+    }
     return (out.items ?? out.events ?? []) as GogEvent[];
   }
 
   async createEvent(args: { account: string; calendarId: string; event: GogEvent }): Promise<void> {
-    const eventJson = JSON.stringify(args.event);
+    const times = normalizeEventTimes(args.event);
     const command = applyTemplate(this.template("createEventCmd"), {
       account: args.account,
       calendarId: args.calendarId,
-      eventJson
+      summary: quoteArg(args.event.summary ?? "Busy"),
+      description: quoteArg(args.event.description ?? ""),
+      visibility: args.event.visibility ?? "private",
+      transparency: args.event.transparency ?? "busy",
+      from: times.from,
+      to: times.to,
+      allDayFlag: times.allDayFlag
     });
     await runJson(command);
   }
 
   async updateEvent(args: { account: string; calendarId: string; eventId: string; event: GogEvent }): Promise<void> {
-    const eventJson = JSON.stringify(args.event);
+    const times = normalizeEventTimes(args.event);
     const command = applyTemplate(this.template("updateEventCmd"), {
       account: args.account,
       calendarId: args.calendarId,
       eventId: args.eventId,
-      eventJson
+      summary: quoteArg(args.event.summary ?? "Busy"),
+      description: quoteArg(args.event.description ?? ""),
+      visibility: args.event.visibility ?? "private",
+      transparency: args.event.transparency ?? "busy",
+      from: times.from,
+      to: times.to,
+      allDayFlag: times.allDayFlag
     });
     await runJson(command);
   }
